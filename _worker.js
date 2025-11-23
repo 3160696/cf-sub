@@ -498,7 +498,6 @@ async function 迁移地址列表(env, txt = 'ADD.txt') {
 async function KV(request, env, txt = 'ADD.txt', guest) {
 	const url = new URL(request.url);
 	try {
-		// POST请求处理
 		if (request.method === "POST") {
 			if (!env.KV) return new Response("未绑定KV空间", { status: 400 });
 			try {
@@ -511,10 +510,8 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
 			}
 		}
 
-		// GET请求部分
 		let content = '';
 		let hasKV = !!env.KV;
-
 		if (hasKV) {
 			try {
 				content = await env.KV.get(txt) || '';
@@ -524,7 +521,6 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
 			}
 		}
 
-		// 高端重构后的HTML
 		const html = `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -534,181 +530,170 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
     <title>${FileName} 管理面板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@keeex/qrcodejs-kx@1.0.2/qrcode.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        /* 自定义滚动条 */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        /* 玻璃拟态 */
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        textarea { border: none; outline: none; resize: none; }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#2563eb',
-                        secondary: '#475569',
-                        accent: '#0f172a',
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+<body class="text-slate-600 min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-700">
 
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <!-- Toast -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
-    <!-- Modal for QR Code -->
-    <div id="qr-modal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 transform scale-95 transition-transform duration-300 max-w-sm w-full mx-4" id="qr-content">
+    <!-- QR Modal -->
+    <div id="qr-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300 opacity-0">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 transform scale-95 transition-all duration-300 max-w-sm w-full mx-4" id="qr-content">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-slate-900">订阅二维码</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <h3 class="text-xl font-bold text-slate-800">扫码订阅</h3>
+                <button onclick="closeModal()" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div id="qrcode" class="flex justify-center mb-4"></div>
-            <p class="text-sm text-slate-500 text-center break-all" id="qr-url"></p>
+            <div id="qrcode" class="flex justify-center mb-6 p-4 bg-white rounded-xl border border-slate-100 shadow-inner"></div>
+            <p class="text-xs text-center text-slate-400 break-all px-4 font-mono bg-slate-50 py-2 rounded-lg" id="qr-url"></p>
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-grow">
-        
-        <!-- Header -->
-        <header class="flex justify-between items-center mb-8">
-            <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">${FileName} <span class="text-primary">Panel</span></h1>
-                <p class="text-slate-500 mt-1 text-sm">企业级订阅管理控制台</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <div id="status-dot" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                <span class="text-sm font-medium text-slate-600" id="status-text">System Ready</span>
-            </div>
-        </header>
-
-        <!-- Main Editor Section (Top Priority) -->
-        <main class="mb-12">
-            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col h-[600px]">
-                <div class="bg-slate-900 px-4 py-3 flex justify-between items-center border-b border-slate-700">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                        <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                        <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                        <span class="ml-3 text-slate-400 text-xs font-mono">KV / ${txt}</span>
+    <!-- Header -->
+    <nav class="sticky top-0 z-40 w-full glass border-b border-white/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
+                        S
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="saveContent(this)" id="save-btn" class="bg-primary hover:bg-blue-600 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 shadow-lg shadow-blue-500/30">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                            保存配置
-                        </button>
-                    </div>
+                    <span class="text-xl font-bold tracking-tight text-slate-800">${FileName}</span>
                 </div>
-                <div class="flex-grow relative bg-[#0f172a]">
-                    ${hasKV ? `
-                    <textarea id="content" class="w-full h-full bg-[#0f172a] text-slate-300 font-mono text-sm p-4 outline-none resize-none leading-relaxed selection:bg-primary/30 placeholder-slate-600" 
-                        placeholder="在此输入订阅链接，每行一个..." spellcheck="false">${content}</textarea>
+                <div class="flex items-center gap-3 bg-white/50 px-3 py-1.5 rounded-full border border-white shadow-sm">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                    <span class="text-xs font-semibold text-slate-600" id="status-text">Ready</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex-grow max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+        
+        <!-- Editor Section -->
+        <section class="relative group">
+            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2rem] opacity-20 blur transition duration-500 group-hover:opacity-30"></div>
+            <div class="relative bg-white rounded-[1.5rem] shadow-xl ring-1 ring-slate-900/5 overflow-hidden flex flex-col h-[500px] transition-all duration-300">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <div class="flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-rose-400/80"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-400/80"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-400/80"></div>
+                        </div>
+                        <span class="text-xs font-medium text-slate-400 ml-2 font-mono">KV: ${txt}</span>
+                    </div>
+                    <button onclick="saveContent(this)" id="save-btn" class="group/btn flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/20 hover:shadow-indigo-500/30 active:scale-95">
+                        <svg class="w-4 h-4 text-slate-300 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                        Save Changes
+                    </button>
+                </div>
+                
+                <div class="flex-grow relative bg-white">
+                     ${hasKV ? `
+                    <textarea id="content" class="w-full h-full p-6 text-sm font-mono text-slate-600 bg-transparent leading-relaxed placeholder-slate-300" 
+                        placeholder="一行一个订阅链接 / One link per line..." spellcheck="false">${content}</textarea>
                     ` : `
-                    <div class="flex items-center justify-center h-full text-slate-400 flex-col gap-4">
-                        <svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                        <p class="text-lg">未绑定 KV 命名空间，编辑器不可用。</p>
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
+                        <div class="p-4 rounded-full bg-slate-50">
+                            <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <p class="font-medium">KV Namespace Not Bound</p>
                     </div>
                     `}
                 </div>
             </div>
-        </main>
+        </section>
 
-        <!-- Info & Links Section (Bottom) -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Subscription Cards -->
+        <section>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="p-2 bg-indigo-50 rounded-lg">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">订阅链接 <span class="text-slate-400 text-base font-normal ml-2">Subscription Links</span></h2>
+            </div>
             
-            <!-- Left Column: Main Subscription Links -->
-            <div class="lg:col-span-2 space-y-6">
-                <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-                    订阅中心
-                </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 ${generateCard('Universal', `https://${url.hostname}/${mytoken}?sub`, '自适应全平台订阅', 'from-blue-500 to-cyan-400', 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9')}
+                 ${generateCard('Base64', `https://${url.hostname}/${mytoken}?b64`, '基础 Base64 编码格式', 'from-emerald-500 to-teal-400', 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4')}
+                 ${generateCard('Clash Meta', `https://${url.hostname}/${mytoken}?clash`, '支持 Clash.Meta (Mihomo)', 'from-violet-500 to-purple-400', 'M13 10V3L4 14h7v7l9-11h-7z')}
+                 ${generateCard('Sing-box', `https://${url.hostname}/${mytoken}?sb`, 'Sing-box 核心配置', 'from-pink-500 to-rose-400', 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4')}
+                 ${generateCard('Surge', `https://${url.hostname}/${mytoken}?surge`, 'Surge 4/5 配置文件', 'from-orange-500 to-amber-400', 'M13 10V3L4 14h7v7l9-11h-7z')}
+                 ${generateCard('Loon', `https://${url.hostname}/${mytoken}?loon`, 'Loon 移动端配置', 'from-indigo-500 to-blue-400', 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z')}
+            </div>
+        </section>
+
+        <!-- Guest & Info Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Guest Panel -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 card-hover">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-rose-50 rounded-lg">
+                        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">访客访问 <span class="text-xs font-normal text-slate-400 ml-1">Guest Access</span></h3>
+                </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Card Template -->
-                    ${generateCard('Universal / 自适应', `https://${url.hostname}/${mytoken}?sub`, '适用全平台', 'text-blue-600')}
-                    ${generateCard('Base64 / 通用', `https://${url.hostname}/${mytoken}?b64`, '传统的 Base64 编码', 'text-purple-600')}
-                    ${generateCard('Clash / Meta', `https://${url.hostname}/${mytoken}?clash`, 'Clash 及其衍生版', 'text-orange-500')}
-                    ${generateCard('Sing-box', `https://${url.hostname}/${mytoken}?sb`, 'Sing-box 核心专用', 'text-pink-500')}
-                    ${generateCard('Surge', `https://${url.hostname}/${mytoken}?surge`, 'Surge 4/5', 'text-indigo-500')}
-                    ${generateCard('Loon', `https://${url.hostname}/${mytoken}?loon`, 'Loon 移动端', 'text-cyan-500')}
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Guest Token</span>
+                         <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-600 font-medium">Read Only</span>
+                    </div>
+                    <code class="block font-mono text-sm text-slate-700 bg-white p-2 rounded border border-slate-200 select-all">${guest}</code>
                 </div>
 
-                <!-- Guest Section -->
-                <div class="mt-8 border-t border-slate-200 pt-6">
-                   <details class="group rounded-xl bg-slate-50 border border-slate-200 overflow-hidden">
-                        <summary class="flex cursor-pointer items-center justify-between p-4 font-medium text-slate-700 hover:bg-slate-100 transition-colors">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                                <span>访客订阅管理</span>
-                            </div>
-                            <span class="transition group-open:rotate-180">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                            </span>
-                        </summary>
-                        <div class="p-4 bg-white text-sm text-slate-600 border-t border-slate-200">
-                            <div class="flex items-center justify-between mb-4 p-3 bg-slate-50 rounded-lg">
-                                <span class="font-mono text-slate-500">Token: ${guest}</span>
-                                <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">只读权限</span>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                ${generateMiniCard('访客通用', `https://${url.hostname}/sub?token=${guest}`)}
-                                ${generateMiniCard('访客 Clash', `https://${url.hostname}/sub?token=${guest}&clash`)}
-                                ${generateMiniCard('访客 Singbox', `https://${url.hostname}/sub?token=${guest}&sb`)}
-                            </div>
-                        </div>
-                    </details>
+                <div class="space-y-3">
+                    ${generateMiniCard('Universal Link', `https://${url.hostname}/sub?token=${guest}`)}
+                    ${generateMiniCard('Clash Config', `https://${url.hostname}/sub?token=${guest}&clash`)}
+                    ${generateMiniCard('Sing-box Config', `https://${url.hostname}/sub?token=${guest}&sb`)}
                 </div>
             </div>
 
-            <!-- Right Column: System Info -->
-            <div class="space-y-6">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        后端配置
-                    </h3>
-                    <div class="space-y-4">
-                        <div class="group">
-                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">后端 API</label>
-                            <div class="bg-slate-50 p-2 rounded border border-slate-200 text-xs font-mono break-all hover:border-primary transition-colors">
-                                ${subProtocol}://${subConverter}
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">远程配置</label>
-                            <div class="bg-slate-50 p-2 rounded border border-slate-200 text-xs font-mono break-all hover:border-primary transition-colors truncate">
-                                ${subConfig}
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="block text-xs font-medium text-slate-400 uppercase mb-1">User Agent</label>
-                            <div class="bg-slate-50 p-2 rounded border border-slate-200 text-xs font-mono break-all text-slate-500">
-                                ${request.headers.get('User-Agent')}
-                            </div>
-                        </div>
-                    </div>
+            <!-- Backend Info -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 card-hover relative overflow-hidden">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl"></div>
+                
+                <div class="flex items-center gap-3 mb-6 relative">
+                     <div class="p-2 bg-blue-50 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                     </div>
+                     <h3 class="text-lg font-bold text-slate-800">系统信息 <span class="text-xs font-normal text-slate-400 ml-1">System Info</span></h3>
                 </div>
 
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white">
-                    <h3 class="font-bold text-lg mb-2">关于项目</h3>
-                    <p class="text-slate-300 text-sm mb-4">基于 Cloudflare Workers 的高性能订阅管理工具。</p>
-                    <div class="flex gap-3">
-                        <a href="https://github.com/cmliu/CF-Workers-SUB" target="_blank" class="flex-1 bg-white/10 hover:bg-white/20 text-center py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                <div class="space-y-4 relative">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-medium text-slate-400">API Backend</span>
+                            <span class="text-[10px] text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">${subProtocol}</span>
+                        </div>
+                        <div class="font-mono text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 truncate hover:text-indigo-600 transition-colors">
+                            ${subConverter}
+                        </div>
+                    </div>
+                    <div>
+                         <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-medium text-slate-400">Remote Config</span>
+                        </div>
+                         <div class="font-mono text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 truncate hover:text-indigo-600 transition-colors">
+                            ${subConfig}
+                        </div>
+                    </div>
+                    <div class="pt-4 mt-4 border-t border-slate-100 flex gap-4">
+                        <a href="https://github.com/cmliu/CF-Workers-SUB" target="_blank" class="flex-1 flex items-center justify-center gap-2 text-sm text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-all">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                             GitHub
                         </a>
-                        <a href="https://t.me/CMLiussss" target="_blank" class="flex-1 bg-blue-600 hover:bg-blue-500 text-center py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                        <a href="https://t.me/CMLiussss" target="_blank" class="flex-1 flex items-center justify-center gap-2 text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 py-2 rounded-lg transition-all">
                              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
                             Telegram
                         </a>
@@ -717,36 +702,38 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
             </div>
         </section>
 
-        <footer class="mt-12 py-6 text-center text-slate-400 text-xs border-t border-slate-200">
-            <p>&copy; ${new Date().getFullYear()} CF-Workers-SUB. All rights reserved.</p>
+        <footer class="text-center text-slate-400 text-sm py-6">
+            <p>&copy; ${new Date().getFullYear()} ${FileName}. Powered by Cloudflare Workers.</p>
         </footer>
     </div>
 
     <script>
-    // 工具函数：复制到剪贴板
+    // Copy Function
     async function copyToClipboard(text, btnId) {
         try {
             await navigator.clipboard.writeText(text);
-            showToast('复制成功！', 'success');
+            showToast('已复制到剪贴板', 'success');
             
-            // 按钮动画反馈
-            if(btnId) {
-                const btn = document.getElementById(btnId);
-                const originalHTML = btn.innerHTML;
-                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 已复制';
-                btn.classList.add('text-green-600', 'bg-green-50');
+            const btn = document.getElementById(btnId);
+            if(btn) {
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+                btn.classList.add('bg-emerald-500', 'text-white', 'border-transparent');
+                btn.classList.remove('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                
                 setTimeout(() => {
-                    btn.innerHTML = originalHTML;
-                    btn.classList.remove('text-green-600', 'bg-green-50');
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('bg-emerald-500', 'text-white', 'border-transparent');
+                    btn.classList.add('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
                 }, 2000);
             }
         } catch (err) {
             showToast('复制失败', 'error');
-            console.error('Failed to copy:', err);
+            console.error(err);
         }
     }
 
-    // 工具函数：显示二维码
+    // QR Code
     function showQRCode(text) {
         const modal = document.getElementById('qr-modal');
         const content = document.getElementById('qr-content');
@@ -756,17 +743,16 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, {
             text: text,
-            width: 200,
-            height: 200,
-            colorDark: "#0f172a",
+            width: 180,
+            height: 180,
+            colorDark: "#334155",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
         });
         
         urlDisplay.textContent = text;
-        
         modal.classList.remove('hidden');
-        // 强制重绘以触发动画
+        // Trigger reflow
         void modal.offsetWidth;
         modal.classList.remove('opacity-0');
         content.classList.remove('scale-95');
@@ -784,156 +770,102 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         }, 300);
     }
 
-    // 关闭模态框点击背景
-    document.getElementById('qr-modal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
+    document.getElementById('qr-modal').addEventListener('click', (e) => {
+        if(e.target.id === 'qr-modal') closeModal();
     });
 
-    // Toast 通知
+    // Toast
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         
-        const colors = {
-            success: 'bg-green-500',
-            error: 'bg-red-500',
+        const typeStyles = {
+            success: 'bg-emerald-500',
+            error: 'bg-rose-500',
             info: 'bg-blue-500'
         };
         
-        toast.className = \`\${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full flex items-center gap-2 text-sm font-medium min-w-[200px]\`;
+        toast.className = \`\${typeStyles[type]} text-white px-6 py-3 rounded-xl shadow-lg shadow-\${type === 'success' ? 'emerald' : type === 'error' ? 'rose' : 'blue'}-500/20 transform transition-all duration-300 translate-x-full flex items-center gap-3 min-w-[300px]\`;
         toast.innerHTML = \`
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="\${type === 'success' ? 'M5 13l4 4L19 7' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/></svg>
-            \${message}
+            <div class="p-1 rounded-full bg-white/20">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="\${type === 'success' ? 'M5 13l4 4L19 7' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/></svg>
+            </div>
+            <span class="font-medium">\${message}</span>
         \`;
         
         container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
         
-        // 动画进入
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-x-full');
-        });
-
-        // 自动消失
         setTimeout(() => {
-            toast.classList.add('opacity-0', 'translate-x-full');
+            toast.classList.add('translate-x-full', 'opacity-0');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
 
-    // 自动保存逻辑
-    let autoSaveTimer;
+    // Auto-save logic
+    let saveTimeout;
     const textarea = document.getElementById('content');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
 
-    if (textarea) {
-        // 处理全角冒号（主要针对移动端输入法）
-        function replaceFullwidthColon() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            if (!isIOS) {
-                textarea.value = textarea.value.replace(/：/g, ':');
-            }
-        }
-
+    if(textarea) {
         textarea.addEventListener('input', () => {
-            clearTimeout(autoSaveTimer);
-            statusDot.className = "w-3 h-3 rounded-full bg-yellow-500";
-            statusText.textContent = "Editing...";
-            autoSaveTimer = setTimeout(() => saveContent(document.getElementById('save-btn')), 2000);
+            if(saveTimeout) clearTimeout(saveTimeout);
+            
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+            statusText.textContent = "Unsaved";
+            
+            saveTimeout = setTimeout(() => {
+                saveContent(document.getElementById('save-btn'));
+            }, 2000);
         });
 
-        textarea.addEventListener('blur', () => {
-             saveContent(document.getElementById('save-btn'));
+        // Handle mobile full-width colon
+        textarea.addEventListener('change', () => {
+             const val = textarea.value;
+             const newVal = val.replace(/：/g, ':');
+             if(val !== newVal) textarea.value = newVal;
         });
     }
 
     function saveContent(btn) {
-        if (!textarea) return;
+        if(!textarea) return;
         
-        const originalText = btn.innerHTML;
+        const originalContent = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<svg class="animate-spin w-4 h-4 mr-2" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+        btn.innerHTML = '<svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
         
-        replaceFullwidthColon();
-        const content = textarea.value;
-
-        // 检查是否有变化（此处简化，每次触发都尝试保存，依靠后端或KV逻辑）
-        // 实际生产中可以加 md5 校验
+        const content = textarea.value.replace(/：/g, ':');
+        textarea.value = content;
 
         fetch(window.location.href, {
             method: 'POST',
             body: content,
-            headers: { 'Content-Type': 'text/plain;charset=UTF-8' }
+            headers: {'Content-Type': 'text/plain;charset=UTF-8'}
         })
-        .then(response => {
-            if (response.ok) {
-                showToast('配置已保存', 'success');
-                statusDot.className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]";
-                statusText.textContent = "Synced";
-                document.title = "${FileName} - Saved";
+        .then(res => {
+            if(res.ok) {
+                showToast('Changes saved successfully', 'success');
+                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
+                statusText.textContent = "Ready";
             } else {
                 throw new Error('Save failed');
             }
         })
         .catch(err => {
-            showToast('保存失败: ' + err.message, 'error');
-            statusDot.className = "w-3 h-3 rounded-full bg-red-500";
+            showToast('Save failed: ' + err.message, 'error');
+            statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
             statusText.textContent = "Error";
         })
         .finally(() => {
             btn.disabled = false;
-            btn.innerHTML = originalText;
+            btn.innerHTML = originalContent;
         });
     }
     </script>
 </body>
-</html>
-`;
-// 生成卡片的辅助函数
-function generateCard(title, link, desc, iconColor) {
-    const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
-    return `
-    <div class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow duration-300 group">
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2 rounded-lg bg-slate-50 group-hover:bg-slate-100 transition-colors ${iconColor}">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <div>
-                    <h3 class="font-bold text-slate-800">${title}</h3>
-                    <p class="text-xs text-slate-500">${desc}</p>
-                </div>
-            </div>
-        </div>
-        <div class="flex gap-2 mt-4">
-            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 border border-slate-100">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-                复制链接
-            </button>
-            <button onclick="showQRCode('${link}')" class="bg-slate-50 hover:bg-slate-100 text-slate-600 px-3 py-2 rounded-lg transition-colors border border-slate-100" title="显示二维码">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
-            </button>
-        </div>
-    </div>`;
-}
-
-function generateMiniCard(title, link) {
-     const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
-     return `
-     <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors">
-        <span class="text-sm font-medium text-slate-700">${title}</span>
-        <div class="flex gap-2">
-            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="text-slate-400 hover:text-primary transition-colors p-1" title="复制">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            </button>
-             <button onclick="showQRCode('${link}')" class="text-slate-400 hover:text-primary transition-colors p-1" title="二维码">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
-            </button>
-        </div>
-     </div>
-     `;
-}
-
+</html>`;
+		
 		return new Response(html, {
 			headers: { "Content-Type": "text/html;charset=utf-8" }
 		});
@@ -944,4 +876,44 @@ function generateMiniCard(title, link) {
 			headers: { "Content-Type": "text/plain;charset=utf-8" }
 		});
 	}
+}
+
+function generateCard(title, link, desc, gradient = 'from-blue-500 to-indigo-500', iconPath) {
+    const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
+    return `
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+        <div class="flex items-start justify-between mb-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg shadow-${gradient.split(' ')[1].replace('to-', '')}/20">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/></svg>
+            </div>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">${title}</h3>
+        <p class="text-sm text-slate-400 mb-6 h-10">${desc}</p>
+        
+        <div class="flex gap-3">
+            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                Copy
+            </button>
+            <button onclick="showQRCode('${link}')" class="bg-white text-slate-400 hover:text-indigo-600 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 transition-colors shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
+            </button>
+        </div>
+    </div>`;
+}
+
+function generateMiniCard(title, link) {
+    const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
+    return `
+    <div class="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-sm transition-all group">
+        <span class="text-sm font-medium text-slate-600 group-hover:text-indigo-600 transition-colors">${title}</span>
+        <div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="Copy">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+            <button onclick="showQRCode('${link}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="QR Code">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
+            </button>
+        </div>
+    </div>`;
 }
