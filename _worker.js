@@ -531,47 +531,43 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@keeex/qrcodejs-kx@1.0.2/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌐</text></svg>">
     <style>
         body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
-        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-        .gradient-text { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .card-hover { transition: all 0.3s ease; }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.4); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1); }
         textarea { border: none; outline: none; resize: none; }
     </style>
 </head>
-<body class="text-slate-600 min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-700">
+<body class="text-slate-600 min-h-screen flex flex-col selection:bg-indigo-500/30">
 
     <!-- Toast -->
     <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
     <!-- QR Modal -->
     <div id="qr-modal" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300 opacity-0">
-        <div class="bg-white rounded-3xl shadow-2xl p-8 transform scale-95 transition-all duration-300 max-w-sm w-full mx-4" id="qr-content">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-slate-800">扫码订阅</h3>
-                <button onclick="closeModal()" class="p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+        <div class="bg-white rounded-2xl shadow-2xl p-8 transform scale-95 transition-all duration-300 max-w-sm w-full mx-4 relative" id="qr-content">
+            <button onclick="closeModal()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <div class="text-center">
+                <h3 class="text-xl font-bold text-slate-800 mb-6">订阅二维码</h3>
+                <div id="qrcode" class="flex justify-center mb-6 p-2 bg-white"></div>
+                <div class="bg-slate-50 p-3 rounded-lg break-all text-xs font-mono text-slate-500 text-center" id="qr-url"></div>
             </div>
-            <div id="qrcode" class="flex justify-center mb-6 p-4 bg-white rounded-xl border border-slate-100 shadow-inner"></div>
-            <p class="text-xs text-center text-slate-400 break-all px-4 font-mono bg-slate-50 py-2 rounded-lg" id="qr-url"></p>
         </div>
     </div>
 
     <!-- Header -->
-    <nav class="sticky top-0 z-40 w-full glass border-b border-white/50">
+    <nav class="sticky top-0 z-40 w-full glass">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
-                        S
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
                     </div>
                     <span class="text-xl font-bold tracking-tight text-slate-800">${FileName}</span>
-                </div>
-                <div class="flex items-center gap-3 bg-white/50 px-3 py-1.5 rounded-full border border-white shadow-sm">
-                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
-                    <span class="text-xs font-semibold text-slate-600" id="status-text">Ready</span>
                 </div>
             </div>
         </div>
@@ -581,35 +577,39 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         
         <!-- Editor Section -->
         <section class="relative group">
-            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2rem] opacity-20 blur transition duration-500 group-hover:opacity-30"></div>
-            <div class="relative bg-white rounded-[1.5rem] shadow-xl ring-1 ring-slate-900/5 overflow-hidden flex flex-col h-[500px] transition-all duration-300">
+            <div class="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl opacity-20 blur transition duration-500 group-hover:opacity-40"></div>
+            <div class="relative bg-white rounded-xl shadow-xl overflow-hidden flex flex-col h-[600px] border border-slate-200/60">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                     <div class="flex items-center gap-3">
-                        <div class="flex gap-1.5">
-                            <div class="w-3 h-3 rounded-full bg-rose-400/80"></div>
-                            <div class="w-3 h-3 rounded-full bg-amber-400/80"></div>
-                            <div class="w-3 h-3 rounded-full bg-emerald-400/80"></div>
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-400"></div>
                         </div>
-                        <span class="text-xs font-medium text-slate-400 ml-2 font-mono">KV: ${txt}</span>
                     </div>
-                    <button onclick="saveContent(this)" id="save-btn" class="group/btn flex items-center gap-2 px-4 py-1.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-all shadow-lg shadow-slate-900/20 hover:shadow-indigo-500/30 active:scale-95">
-                        <svg class="w-4 h-4 text-slate-300 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <button onclick="saveContent(this)" id="save-btn" class="group/btn flex items-center gap-2 px-5 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg class="w-4 h-4 text-indigo-200 group-hover/btn:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                         Save Changes
                     </button>
                 </div>
                 
                 <div class="flex-grow relative bg-white">
                      ${hasKV ? `
-                    <textarea id="content" class="w-full h-full p-6 text-sm font-mono text-slate-600 bg-transparent leading-relaxed placeholder-slate-300" 
-                        placeholder="一行一个订阅链接 / One link per line..." spellcheck="false">${content}</textarea>
+                    <textarea id="content" class="w-full h-full p-6 text-sm font-mono text-slate-600 bg-transparent leading-relaxed placeholder-slate-300 focus:outline-none" 
+                        placeholder="在此输入节点链接，一行一个..." spellcheck="false">${content}</textarea>
                     ` : `
                     <div class="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
-                        <div class="p-4 rounded-full bg-slate-50">
-                            <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div class="p-4 rounded-full bg-slate-50 border border-slate-100">
+                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                         </div>
-                        <p class="font-medium">KV Namespace Not Bound</p>
+                        <p class="font-medium text-sm">KV Namespace Not Bound</p>
                     </div>
                     `}
+                </div>
+                
+                <div class="px-4 py-2 bg-slate-50 border-t border-slate-100 text-xs text-slate-400 flex justify-between items-center">
+                    <span id="status-text">Ready</span>
+                    <div id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></div>
                 </div>
             </div>
         </section>
@@ -617,123 +617,106 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         <!-- Subscription Cards -->
         <section>
             <div class="flex items-center gap-3 mb-8">
-                <div class="p-2 bg-indigo-50 rounded-lg">
-                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+                <div class="p-2 bg-purple-100 rounded-lg text-purple-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-800">订阅链接 <span class="text-slate-400 text-base font-normal ml-2">Subscription Links</span></h2>
+                <h2 class="text-xl font-bold text-slate-800">订阅管理</h2>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 ${generateCard('Universal', `https://${url.hostname}/${mytoken}?sub`, '自适应全平台订阅', 'from-blue-500 to-cyan-400', 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9')}
-                 ${generateCard('Base64', `https://${url.hostname}/${mytoken}?b64`, '基础 Base64 编码格式', 'from-emerald-500 to-teal-400', 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4')}
-                 ${generateCard('Clash Meta', `https://${url.hostname}/${mytoken}?clash`, '支持 Clash.Meta (Mihomo)', 'from-violet-500 to-purple-400', 'M13 10V3L4 14h7v7l9-11h-7z')}
-                 ${generateCard('Sing-box', `https://${url.hostname}/${mytoken}?sb`, 'Sing-box 核心配置', 'from-pink-500 to-rose-400', 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4')}
-                 ${generateCard('Surge', `https://${url.hostname}/${mytoken}?surge`, 'Surge 4/5 配置文件', 'from-orange-500 to-amber-400', 'M13 10V3L4 14h7v7l9-11h-7z')}
-                 ${generateCard('Loon', `https://${url.hostname}/${mytoken}?loon`, 'Loon 移动端配置', 'from-indigo-500 to-blue-400', 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z')}
+                 ${generateCard('Universal', `https://${url.hostname}/${mytoken}?sub`, '通用自适应订阅', 'from-indigo-500 to-blue-500', 'M4 6h16M4 12h16M4 18h16')}
+                 ${generateCard('Base64', `https://${url.hostname}/${mytoken}?b64`, 'Base64 编码链接', 'from-emerald-500 to-teal-500', 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4')}
+                 ${generateCard('Clash Meta', `https://${url.hostname}/${mytoken}?clash`, 'Clash / Mihomo 配置', 'from-blue-500 to-cyan-500', 'M13 10V3L4 14h7v7l9-11h-7z')}
+                 ${generateCard('Sing-box', `https://${url.hostname}/${mytoken}?sb`, 'Sing-box 专用配置', 'from-rose-500 to-pink-500', 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4')}
+                 ${generateCard('Surge', `https://${url.hostname}/${mytoken}?surge`, 'Surge 4/5 配置文件', 'from-orange-500 to-amber-500', 'M13 10V3L4 14h7v7l9-11h-7z')}
+                 ${generateCard('Loon', `https://${url.hostname}/${mytoken}?loon`, 'Loon 移动端配置', 'from-violet-500 to-purple-500', 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z')}
             </div>
         </section>
 
-        <!-- Guest & Info Grid -->
+        <!-- Info Grid -->
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Guest Panel -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 card-hover">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="p-2 bg-rose-50 rounded-lg">
-                        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-orange-50 rounded-lg text-orange-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </div>
+                        <h3 class="font-bold text-slate-800">访客访问</h3>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-800">访客访问 <span class="text-xs font-normal text-slate-400 ml-1">Guest Access</span></h3>
+                    <span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-500">Read Only</span>
                 </div>
                 
-                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
-                    <div class="flex justify-between items-center mb-2">
-                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Guest Token</span>
-                         <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-600 font-medium">Read Only</span>
-                    </div>
-                    <code class="block font-mono text-sm text-slate-700 bg-white p-2 rounded border border-slate-200 select-all">${guest}</code>
-                </div>
-
                 <div class="space-y-3">
-                    ${generateMiniCard('Universal Link', `https://${url.hostname}/sub?token=${guest}`)}
-                    ${generateMiniCard('Clash Config', `https://${url.hostname}/sub?token=${guest}&clash`)}
-                    ${generateMiniCard('Sing-box Config', `https://${url.hostname}/sub?token=${guest}&sb`)}
+                    ${generateMiniCard('访客通用订阅', `https://${url.hostname}/sub?token=${guest}`)}
+                    ${generateMiniCard('访客 Clash', `https://${url.hostname}/sub?token=${guest}&clash`)}
+                    ${generateMiniCard('访客 Sing-box', `https://${url.hostname}/sub?token=${guest}&sb`)}
                 </div>
             </div>
 
             <!-- Backend Info -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 card-hover relative overflow-hidden">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl"></div>
-                
-                <div class="flex items-center gap-3 mb-6 relative">
-                     <div class="p-2 bg-blue-50 rounded-lg">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
-                     </div>
-                     <h3 class="text-lg font-bold text-slate-800">系统信息 <span class="text-xs font-normal text-slate-400 ml-1">System Info</span></h3>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 card-hover">
+                 <div class="flex items-center gap-3 mb-6">
+                    <div class="p-2 bg-slate-50 rounded-lg text-slate-500">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </div>
+                    <h3 class="font-bold text-slate-800">配置信息</h3>
                 </div>
-
-                <div class="space-y-4 relative">
+                
+                <div class="space-y-4">
                     <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-medium text-slate-400">API Backend</span>
-                            <span class="text-[10px] text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">${subProtocol}</span>
+                        <div class="flex justify-between text-xs mb-1 text-slate-400">
+                            <span>API Backend</span>
                         </div>
-                        <div class="font-mono text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 truncate hover:text-indigo-600 transition-colors">
-                            ${subConverter}
+                        <div class="bg-slate-50 p-2 rounded border border-slate-100 font-mono text-xs text-slate-600 truncate">
+                            ${subProtocol}://${subConverter}
                         </div>
                     </div>
                     <div>
-                         <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-medium text-slate-400">Remote Config</span>
+                        <div class="flex justify-between text-xs mb-1 text-slate-400">
+                            <span>Config File</span>
                         </div>
-                         <div class="font-mono text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 truncate hover:text-indigo-600 transition-colors">
+                        <div class="bg-slate-50 p-2 rounded border border-slate-100 font-mono text-xs text-slate-600 truncate">
                             ${subConfig}
                         </div>
                     </div>
-                    <div class="pt-4 mt-4 border-t border-slate-100 flex gap-4">
-                        <a href="https://github.com/cmliu/CF-Workers-SUB" target="_blank" class="flex-1 flex items-center justify-center gap-2 text-sm text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-all">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                            GitHub
-                        </a>
-                        <a href="https://t.me/CMLiussss" target="_blank" class="flex-1 flex items-center justify-center gap-2 text-sm text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 py-2 rounded-lg transition-all">
-                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                            Telegram
-                        </a>
+                     <div class="flex gap-2 mt-4">
+                        <a href="https://github.com/cmliu/CF-Workers-SUB" target="_blank" class="flex-1 py-2 bg-slate-900 text-white rounded-lg text-xs font-medium text-center hover:bg-slate-800 transition-colors">GitHub</a>
+                        <a href="https://t.me/CMLiussss" target="_blank" class="flex-1 py-2 bg-blue-500 text-white rounded-lg text-xs font-medium text-center hover:bg-blue-600 transition-colors">Telegram</a>
                     </div>
                 </div>
             </div>
         </section>
 
-        <footer class="text-center text-slate-400 text-sm py-6">
-            <p>&copy; ${new Date().getFullYear()} ${FileName}. Powered by Cloudflare Workers.</p>
+        <footer class="text-center text-slate-400 text-xs py-8">
+            <p>Powered by Cloudflare Workers &copy; ${new Date().getFullYear()}</p>
         </footer>
     </div>
 
     <script>
-    // Copy Function
     async function copyToClipboard(text, btnId) {
         try {
             await navigator.clipboard.writeText(text);
-            showToast('已复制到剪贴板', 'success');
+            showToast('链接已复制', 'success');
             
             const btn = document.getElementById(btnId);
             if(btn) {
-                const originalContent = btn.innerHTML;
-                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
-                btn.classList.add('bg-emerald-500', 'text-white', 'border-transparent');
-                btn.classList.remove('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> 已复制';
+                btn.classList.add('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
+                btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
                 
                 setTimeout(() => {
-                    btn.innerHTML = originalContent;
-                    btn.classList.remove('bg-emerald-500', 'text-white', 'border-transparent');
-                    btn.classList.add('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('bg-emerald-100', 'text-emerald-700', 'border-emerald-200');
+                    btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
                 }, 2000);
             }
         } catch (err) {
             showToast('复制失败', 'error');
-            console.error(err);
         }
     }
 
-    // QR Code
     function showQRCode(text) {
         const modal = document.getElementById('qr-modal');
         const content = document.getElementById('qr-content');
@@ -743,19 +726,19 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         qrContainer.innerHTML = '';
         new QRCode(qrContainer, {
             text: text,
-            width: 180,
-            height: 180,
-            colorDark: "#334155",
+            width: 160,
+            height: 160,
+            colorDark: "#1e293b",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
         });
         
         urlDisplay.textContent = text;
         modal.classList.remove('hidden');
-        // Trigger reflow
-        void modal.offsetWidth;
-        modal.classList.remove('opacity-0');
-        content.classList.remove('scale-95');
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+        });
     }
 
     function closeModal() {
@@ -774,23 +757,20 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         if(e.target.id === 'qr-modal') closeModal();
     });
 
-    // Toast
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         
-        const typeStyles = {
+        const colors = {
             success: 'bg-emerald-500',
             error: 'bg-rose-500',
-            info: 'bg-blue-500'
+            info: 'bg-indigo-500'
         };
         
-        toast.className = \`\${typeStyles[type]} text-white px-6 py-3 rounded-xl shadow-lg shadow-\${type === 'success' ? 'emerald' : type === 'error' ? 'rose' : 'blue'}-500/20 transform transition-all duration-300 translate-x-full flex items-center gap-3 min-w-[300px]\`;
+        toast.className = \`\${colors[type]} text-white px-4 py-2.5 rounded-lg shadow-lg shadow-slate-200 transform transition-all duration-300 translate-x-full flex items-center gap-2 text-sm font-medium\`;
         toast.innerHTML = \`
-            <div class="p-1 rounded-full bg-white/20">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="\${type === 'success' ? 'M5 13l4 4L19 7' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/></svg>
-            </div>
-            <span class="font-medium">\${message}</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            \${message}
         \`;
         
         container.appendChild(toast);
@@ -802,25 +782,24 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         }, 3000);
     }
 
-    // Auto-save logic
+    // Auto-save
     let saveTimeout;
     const textarea = document.getElementById('content');
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
+    const saveBtn = document.getElementById('save-btn');
 
     if(textarea) {
         textarea.addEventListener('input', () => {
             if(saveTimeout) clearTimeout(saveTimeout);
-            
-            statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
-            statusText.textContent = "Unsaved";
+            statusDot.className = "w-2 h-2 rounded-full bg-amber-400";
+            statusText.textContent = "Editing...";
             
             saveTimeout = setTimeout(() => {
-                saveContent(document.getElementById('save-btn'));
-            }, 2000);
+                saveContent(saveBtn);
+            }, 1500);
         });
 
-        // Handle mobile full-width colon
         textarea.addEventListener('change', () => {
              const val = textarea.value;
              const newVal = val.replace(/：/g, ':');
@@ -833,7 +812,7 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         
         const originalContent = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = '<svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+        btn.innerHTML = '<svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
         
         const content = textarea.value.replace(/：/g, ':');
         textarea.value = content;
@@ -845,16 +824,16 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
         })
         .then(res => {
             if(res.ok) {
-                showToast('Changes saved successfully', 'success');
-                statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]";
-                statusText.textContent = "Ready";
+                showToast('已保存', 'success');
+                statusDot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                statusText.textContent = "Synced";
             } else {
-                throw new Error('Save failed');
+                throw new Error('Failed');
             }
         })
         .catch(err => {
-            showToast('Save failed: ' + err.message, 'error');
-            statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+            showToast('保存失败', 'error');
+            statusDot.className = "w-2 h-2 rounded-full bg-rose-500";
             statusText.textContent = "Error";
         })
         .finally(() => {
@@ -881,22 +860,22 @@ async function KV(request, env, txt = 'ADD.txt', guest) {
 function generateCard(title, link, desc, gradient = 'from-blue-500 to-indigo-500', iconPath) {
     const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
     return `
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 group hover:-translate-y-1">
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 group hover:-translate-y-0.5">
         <div class="flex items-start justify-between mb-4">
-            <div class="p-3 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg shadow-${gradient.split(' ')[1].replace('to-', '')}/20">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/></svg>
+            <div class="p-3 rounded-lg bg-gradient-to-br ${gradient} text-white shadow-md shadow-indigo-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/></svg>
             </div>
         </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">${title}</h3>
-        <p class="text-sm text-slate-400 mb-6 h-10">${desc}</p>
+        <h3 class="font-bold text-slate-800 mb-1 group-hover:text-indigo-600 transition-colors">${title}</h3>
+        <p class="text-xs text-slate-400 mb-6 h-8 leading-relaxed">${desc}</p>
         
-        <div class="flex gap-3">
-            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-                Copy
+        <div class="flex gap-2">
+            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="flex-1 bg-white text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                复制链接
             </button>
-            <button onclick="showQRCode('${link}')" class="bg-white text-slate-400 hover:text-indigo-600 px-3 py-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 transition-colors shadow-sm">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
+            <button onclick="showQRCode('${link}')" class="bg-white text-slate-400 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 p-2 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
             </button>
         </div>
     </div>`;
@@ -905,14 +884,14 @@ function generateCard(title, link, desc, gradient = 'from-blue-500 to-indigo-500
 function generateMiniCard(title, link) {
     const btnId = 'btn-' + Math.random().toString(36).substr(2, 9);
     return `
-    <div class="flex items-center justify-between p-3 rounded-xl bg-white border border-slate-100 hover:border-indigo-100 hover:shadow-sm transition-all group">
+    <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-100 transition-all group">
         <span class="text-sm font-medium text-slate-600 group-hover:text-indigo-600 transition-colors">${title}</span>
-        <div class="flex gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="Copy">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        <div class="flex gap-2 opacity-70 group-hover:opacity-100 transition-opacity">
+            <button id="${btnId}" onclick="copyToClipboard('${link}', '${btnId}')" class="p-1.5 hover:bg-white rounded-md text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="复制链接">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
             </button>
-            <button onclick="showQRCode('${link}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors" title="QR Code">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
+            <button onclick="showQRCode('${link}')" class="p-1.5 hover:bg-white rounded-md text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="二维码">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M7 4v4h4V4H7zM7 16v4h4v-4H7zM17 4v4h4V4h-4z"/></svg>
             </button>
         </div>
     </div>`;
